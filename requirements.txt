@@ -1,5 +1,5 @@
 gradio>=4.7.1
-anthropic>=0.40.0
+google-genai>=1.0.0
 huggingface-hub>=0.25.0
 python-dotenv>=1.0.0
 pandas>=2.0.0

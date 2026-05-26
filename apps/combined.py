@@ -258,7 +258,7 @@ def create_combined_app() -> gr.Blocks:
         gr.Markdown(
             """
 # 🤖 AI Personal Assistants — Open-Source vs Frontier
-Compare **Qwen 2.5 (HuggingFace)** and **Claude (Anthropic)** side-by-side.
+Compare **Llama 3.2 (HuggingFace)** and **Gemini (Google)** side-by-side.
 Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 """
         )
@@ -267,7 +267,7 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 
             # ── Tab 1: OSS Assistant ──────────────────────────────────────────
             with gr.TabItem("🟣 OSS Assistant"):
-                gr.Markdown("### Open-Source Model — Qwen 2.5 via HuggingFace Inference")
+                gr.Markdown("### Open-Source Model — Llama 3.2 via HuggingFace Inference")
                 with gr.Accordion("⚙️ Settings", open=False):
                     oss_model_dd = gr.Dropdown(
                         choices=list(OSS_MODELS.keys()),
@@ -295,7 +295,7 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 
             # ── Tab 2: Frontier Assistant ─────────────────────────────────────
             with gr.TabItem("🟠 Frontier Assistant"):
-                gr.Markdown("### Frontier Model — Claude (Anthropic)")
+                gr.Markdown("### Frontier Model — Gemini (Google)")
                 with gr.Accordion("⚙️ Settings", open=False):
                     fr_model_dd = gr.Dropdown(
                         choices=list(FRONTIER_MODELS.keys()),
@@ -350,7 +350,7 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
                         gr.Markdown("#### 🟣 OSS (Qwen)", elem_classes="compare-header")
                         cmp_oss_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
                     with gr.Column():
-                        gr.Markdown("#### 🟠 Frontier (Claude)", elem_classes="compare-header")
+                        gr.Markdown("#### 🟠 Frontier (Gemini)", elem_classes="compare-header")
                         cmp_fr_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
 
                 with gr.Row():

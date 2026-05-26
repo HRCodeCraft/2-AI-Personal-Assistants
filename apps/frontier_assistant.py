@@ -60,7 +60,7 @@ def create_frontier_app() -> gr.Blocks:
         gr.Markdown(
             """
 # 🧠 Frontier Assistant
-**Powered by Claude (Anthropic) — State-of-the-Art Language Model**
+**Powered by Gemini (Google) — State-of-the-Art Language Model**
 
 Multi-turn conversation · Streaming · Context-aware
 """
@@ -71,7 +71,7 @@ Multi-turn conversation · Streaming · Context-aware
                 choices=list(SUPPORTED_MODELS.keys()),
                 value=list(SUPPORTED_MODELS.keys())[0],
                 label="Model",
-                info="Select Claude model variant",
+                info="Select Gemini model variant",
             )
             system_prompt = gr.Textbox(
                 value=DEFAULT_SYSTEM_PROMPT,
@@ -112,7 +112,7 @@ Multi-turn conversation · Streaming · Context-aware
 
         gr.Markdown(
             "_Powered by [Anthropic Claude](https://anthropic.com). "
-            "Set `ANTHROPIC_API_KEY` in `.env` to use this assistant._"
+            "Set `GOOGLE_API_KEY` in `.env` to use this assistant. Free key at [aistudio.google.com](https://aistudio.google.com/apikey)._"
         )
 
     return demo
