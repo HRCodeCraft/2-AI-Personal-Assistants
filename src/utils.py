@@ -15,25 +15,32 @@ DEFAULT_SYSTEM_PROMPT = (
 
 
 def gradio_history_to_messages(
-    history: list[list[Optional[str]]],
+    history,
     system_prompt: str = "",
 ) -> list[dict]:
-    """Convert Gradio ChatInterface history to OpenAI-style message list.
+    """Convert Gradio history to OpenAI-style message list.
 
-    Args:
-        history: List of [user_text, assistant_text] pairs from Gradio.
-        system_prompt: Optional system message to prepend.
+    Handles both Gradio 6 format (list of {role, content} dicts)
+    and old Gradio format (list of [user, assistant] pairs).
     """
     messages: list[dict] = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
-    for pair in history:
-        user_msg = pair[0] if pair[0] is not None else ""
-        asst_msg = pair[1] if pair[1] is not None else ""
-        if user_msg:
-            messages.append({"role": "user", "content": user_msg})
-        if asst_msg:
-            messages.append({"role": "assistant", "content": asst_msg})
+    for item in history:
+        if isinstance(item, dict):
+            # Gradio 6 new format: {"role": "user"|"assistant", "content": "..."}
+            role = item.get("role", "")
+            content = item.get("content") or ""
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+        else:
+            # Legacy format: [user_msg, assistant_msg]
+            user_msg = item[0] if item[0] is not None else ""
+            asst_msg = item[1] if item[1] is not None else ""
+            if user_msg:
+                messages.append({"role": "user", "content": user_msg})
+            if asst_msg:
+                messages.append({"role": "assistant", "content": asst_msg})
     return messages
 
 

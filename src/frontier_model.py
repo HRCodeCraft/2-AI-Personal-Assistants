@@ -10,12 +10,11 @@ from google.genai import types
 
 
 SUPPORTED_MODELS: dict[str, str] = {
-    "Gemini 2.0 Flash (recommended)": "gemini-2.0-flash",
-    "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "Gemini 1.5 Pro": "gemini-1.5-pro",
+    "Gemini Flash Lite (recommended)": "models/gemini-flash-lite-latest",
+    "Gemini 2.5 Flash": "models/gemini-2.5-flash",
 }
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "models/gemini-flash-lite-latest"
 
 
 class FrontierModel:
@@ -75,8 +74,12 @@ class FrontierModel:
             contents=contents,
             config=config,
         ):
-            if chunk.text:
-                yield chunk.text
+            try:
+                text = chunk.text
+            except Exception:
+                continue
+            if text:
+                yield text
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 

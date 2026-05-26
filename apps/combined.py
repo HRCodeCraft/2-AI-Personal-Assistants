@@ -105,29 +105,33 @@ def compare_respond(
         yield oss_history, frontier_history, ""
         return
 
-    oss_history = list(oss_history) + [[message, ""]]
-    frontier_history = list(frontier_history) + [[message, ""]]
-    yield oss_history, frontier_history, ""
+    # Gradio 6 Chatbot uses {role, content} dicts
+    oss_history = list(oss_history) + [
+        {"role": "user", "content": message},
+        {"role": "assistant", "content": ""},
+    ]
+    frontier_history = list(frontier_history) + [
+        {"role": "user", "content": message},
+        {"role": "assistant", "content": ""},
+    ]
+    yield list(oss_history), list(frontier_history), ""
 
     oss_id = OSS_MODELS.get(oss_model_name, OSS_DEFAULT)
     frontier_id = FRONTIER_MODELS.get(frontier_model_name, FRONTIER_DEFAULT)
 
-    oss_msgs = gradio_history_to_messages(oss_history[:-1], system_prompt) + [
-        {"role": "user", "content": message}
-    ]
-    frontier_msgs = gradio_history_to_messages(frontier_history[:-1], system_prompt) + [
-        {"role": "user", "content": message}
-    ]
+    # Build API messages (exclude the trailing empty assistant entry)
+    oss_msgs = gradio_history_to_messages(oss_history[:-1], system_prompt)
+    frontier_msgs = gradio_history_to_messages(frontier_history[:-1], system_prompt)
 
     # ── Stream OSS ────────────────────────────────────────────────────────────
     try:
         oss_acc = ""
         for chunk in _get_oss(oss_id).chat(oss_msgs, temperature=temperature, max_tokens=max_tokens, stream=True):
             oss_acc += chunk
-            oss_history[-1][1] = oss_acc
+            oss_history[-1] = {"role": "assistant", "content": oss_acc}
             yield list(oss_history), list(frontier_history), ""
     except Exception as exc:
-        oss_history[-1][1] = format_error(exc, "OSS")
+        oss_history[-1] = {"role": "assistant", "content": format_error(exc, "OSS")}
         yield list(oss_history), list(frontier_history), ""
 
     # ── Stream Frontier ───────────────────────────────────────────────────────
@@ -135,10 +139,10 @@ def compare_respond(
         fr_acc = ""
         for chunk in _get_frontier(frontier_id).chat(frontier_msgs, temperature=temperature, max_tokens=max_tokens, stream=True):
             fr_acc += chunk
-            frontier_history[-1][1] = fr_acc
+            frontier_history[-1] = {"role": "assistant", "content": fr_acc}
             yield list(oss_history), list(frontier_history), ""
     except Exception as exc:
-        frontier_history[-1][1] = format_error(exc, "Frontier")
+        frontier_history[-1] = {"role": "assistant", "content": format_error(exc, "Frontier")}
         yield list(oss_history), list(frontier_history), ""
 
 
