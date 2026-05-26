@@ -11,7 +11,7 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from apps.combined import create_combined_app
+from apps.combined import create_combined_app, _THEME, CUSTOM_CSS
 
 
 def main() -> None:
@@ -24,7 +24,8 @@ def main() -> None:
         server_name="0.0.0.0",
         server_port=port,
         share=share,
-        show_api=False,
+        theme=_THEME,
+        css=CUSTOM_CSS,
     )
 
 

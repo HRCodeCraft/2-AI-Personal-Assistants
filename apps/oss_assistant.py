@@ -52,14 +52,11 @@ def respond(
 
 # ── Gradio layout ──────────────────────────────────────────────────────────────
 
-def create_oss_app() -> gr.Blocks:
-    theme = gr.themes.Soft(
-        primary_hue="violet",
-        secondary_hue="purple",
-        neutral_hue="slate",
-    )
+_THEME = gr.themes.Soft(primary_hue="violet", secondary_hue="purple", neutral_hue="slate")
 
-    with gr.Blocks(theme=theme, title="OSS Assistant — Qwen / HuggingFace") as demo:
+
+def create_oss_app() -> gr.Blocks:
+    with gr.Blocks(title="OSS Assistant — Qwen / HuggingFace") as demo:
         gr.Markdown(
             """
 # 🤖 Open-Source Assistant
@@ -95,9 +92,8 @@ Multi-turn conversation · Streaming · Context-aware
         chatbot = gr.Chatbot(
             label="Conversation",
             height=520,
-            show_copy_button=True,
-            avatar_images=(None, "https://huggingface.co/front/assets/huggingface_logo-noborder.svg"),
-            bubble_full_width=False,
+            layout="bubble",
+            buttons=["copy"],
         )
 
         gr.ChatInterface(
@@ -106,14 +102,11 @@ Multi-turn conversation · Streaming · Context-aware
             additional_inputs=[system_prompt, model_dropdown, temperature, max_tokens],
             additional_inputs_accordion=gr.Accordion(visible=False),
             submit_btn="Send ↵",
-            retry_btn="↺ Retry",
-            undo_btn="↩ Undo",
-            clear_btn="🗑 Clear",
             examples=[
-                "What is the capital of Australia?",
-                "Explain quantum entanglement in simple terms.",
-                "Write a short poem about the ocean.",
-                "What are the pros and cons of renewable energy?",
+                ["What is the capital of Australia?"],
+                ["Explain quantum entanglement in simple terms."],
+                ["Write a short poem about the ocean."],
+                ["What are the pros and cons of renewable energy?"],
             ],
         )
 
@@ -131,4 +124,5 @@ if __name__ == "__main__":
     app.launch(
         server_port=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
         share=os.getenv("GRADIO_SHARE", "false").lower() == "true",
+        theme=_THEME,
     )

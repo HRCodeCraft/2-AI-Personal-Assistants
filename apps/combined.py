@@ -244,16 +244,16 @@ CUSTOM_CSS = """
 footer { display: none !important; }
 """
 
+_THEME = gr.themes.Soft(
+    primary_hue="indigo",
+    secondary_hue="purple",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont("Inter"), "sans-serif"],
+)
+
 
 def create_combined_app() -> gr.Blocks:
-    theme = gr.themes.Soft(
-        primary_hue="indigo",
-        secondary_hue="purple",
-        neutral_hue="slate",
-        font=[gr.themes.GoogleFont("Inter"), "sans-serif"],
-    )
-
-    with gr.Blocks(theme=theme, css=CUSTOM_CSS, title="AI Personal Assistants — OSS vs Frontier") as demo:
+    with gr.Blocks(title="AI Personal Assistants — OSS vs Frontier") as demo:
 
         gr.Markdown(
             """
@@ -279,17 +279,17 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
                         oss_temp = gr.Slider(0.0, 1.5, 0.7, step=0.05, label="Temperature")
                         oss_max = gr.Slider(64, 2048, 1024, step=64, label="Max Tokens")
 
-                oss_bot = gr.Chatbot(height=500, show_copy_button=True, bubble_full_width=False)
+                oss_bot = gr.Chatbot(height=500, layout="bubble", buttons=["copy"])
                 gr.ChatInterface(
                     fn=oss_respond,
                     chatbot=oss_bot,
                     additional_inputs=[oss_sys, oss_model_dd, oss_temp, oss_max],
                     additional_inputs_accordion=gr.Accordion(visible=False),
-                    submit_btn="Send", retry_btn="↺", undo_btn="↩", clear_btn="🗑",
+                    submit_btn="Send",
                     examples=[
-                        "What is the boiling point of water?",
-                        "Explain neural networks to a 10-year-old.",
-                        "Write a haiku about AI.",
+                        ["What is the boiling point of water?"],
+                        ["Explain neural networks to a 10-year-old."],
+                        ["Write a haiku about AI."],
                     ],
                 )
 
@@ -307,17 +307,17 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
                         fr_temp = gr.Slider(0.0, 1.5, 0.7, step=0.05, label="Temperature")
                         fr_max = gr.Slider(64, 4096, 1024, step=64, label="Max Tokens")
 
-                fr_bot = gr.Chatbot(height=500, show_copy_button=True, bubble_full_width=False)
+                fr_bot = gr.Chatbot(height=500, layout="bubble", buttons=["copy"])
                 gr.ChatInterface(
                     fn=frontier_respond,
                     chatbot=fr_bot,
                     additional_inputs=[fr_sys, fr_model_dd, fr_temp, fr_max],
                     additional_inputs_accordion=gr.Accordion(visible=False),
-                    submit_btn="Send", retry_btn="↺", undo_btn="↩", clear_btn="🗑",
+                    submit_btn="Send",
                     examples=[
-                        "What is the boiling point of water?",
-                        "Explain neural networks to a 10-year-old.",
-                        "Write a haiku about AI.",
+                        ["What is the boiling point of water?"],
+                        ["Explain neural networks to a 10-year-old."],
+                        ["Write a haiku about AI."],
                     ],
                 )
 
@@ -348,10 +348,10 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
                 with gr.Row():
                     with gr.Column():
                         gr.Markdown("#### 🟣 OSS (Qwen)", elem_classes="compare-header")
-                        cmp_oss_bot = gr.Chatbot(height=420, show_copy_button=True, bubble_full_width=False)
+                        cmp_oss_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
                     with gr.Column():
                         gr.Markdown("#### 🟠 Frontier (Claude)", elem_classes="compare-header")
-                        cmp_fr_bot = gr.Chatbot(height=420, show_copy_button=True, bubble_full_width=False)
+                        cmp_fr_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
 
                 with gr.Row():
                     cmp_input = gr.Textbox(
