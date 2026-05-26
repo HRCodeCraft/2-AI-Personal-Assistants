@@ -10,14 +10,11 @@ from huggingface_hub.errors import HfHubHTTPError
 
 
 SUPPORTED_MODELS: dict[str, str] = {
-    "Qwen2.5-0.5B-Instruct (recommended)": "Qwen/Qwen2.5-0.5B-Instruct",
-    "Qwen2.5-1.5B-Instruct": "Qwen/Qwen2.5-1.5B-Instruct",
-    "Qwen2.5-3B-Instruct": "Qwen/Qwen2.5-3B-Instruct",
-    "Phi-3-mini-4k-Instruct": "microsoft/Phi-3-mini-4k-instruct",
-    "Mistral-7B-Instruct-v0.3": "mistralai/Mistral-7B-Instruct-v0.3",
+    "Llama-3.2-1B-Instruct (recommended)": "meta-llama/Llama-3.2-1B-Instruct",
+    "Llama-3.1-8B-Instruct": "meta-llama/Llama-3.1-8B-Instruct",
 }
 
-DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+DEFAULT_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 
 
 class OSSModel:
@@ -38,6 +35,10 @@ class OSSModel:
         self.temperature = temperature
         self.max_tokens = max_tokens
         token = hf_token or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+        # Reject placeholder values so auto-router gets a clean None, not a fake key
+        if token and not token.startswith("hf_"):
+            token = None
+        # No explicit provider — let HF auto-router pick the right one per model
         self.client = InferenceClient(token=token)
 
     # ── Public API ─────────────────────────────────────────────────────────────
