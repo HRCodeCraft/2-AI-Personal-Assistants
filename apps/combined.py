@@ -243,15 +243,183 @@ def _rows_to_md(rows: list[dict]) -> str:
 # ── App builder ───────────────────────────────────────────────────────────────
 
 CUSTOM_CSS = """
-.tab-nav button { font-size: 1rem; font-weight: 600; }
-.compare-header { text-align: center; font-size: 1.1rem; font-weight: bold; padding: 8px; }
-footer { display: none !important; }
+/* ── Google Font ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* ── Root variables — ChatGPT palette ────────────────────────────────────── */
+:root {
+  --bg:        #212121;
+  --bg2:       #2f2f2f;
+  --bg3:       #3a3a3a;
+  --border:    #444;
+  --text:      #ececec;
+  --text2:     #8e8ea0;
+  --accent:    #10a37f;
+  --acc-oss:   #a855f7;
+  --radius:    12px;
+}
+
+/* ── Global reset ────────────────────────────────────────────────────────── */
+*, body, .gradio-container, .main {
+  font-family: 'Inter', sans-serif !important;
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.app-header { text-align: center; padding: 28px 0 12px; }
+.app-header h1 { font-size: 1.6rem; font-weight: 600; color: var(--text); margin: 0; }
+.app-header p  { color: var(--text2); font-size: 0.9rem; margin: 6px 0 0; }
+
+/* ── Tab navigation ──────────────────────────────────────────────────────── */
+.tab-nav { background: transparent !important; border-bottom: 1px solid var(--border) !important; padding: 0 8px !important; }
+.tab-nav button {
+  background: transparent !important;
+  color: var(--text2) !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 12px 20px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+  margin-bottom: -1px !important;
+}
+.tab-nav button:hover { color: var(--text) !important; }
+.tab-nav button.selected {
+  color: var(--text) !important;
+  border-bottom: 2px solid var(--text) !important;
+}
+
+/* ── Chatbot ─────────────────────────────────────────────────────────────── */
+.chatbot, [class*="chatbot"] {
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+}
+.message-wrap { padding: 12px 16px !important; }
+
+/* User bubble */
+[data-testid="user"] .bubble-wrap, .message.user {
+  background: var(--bg2) !important;
+  border-radius: 18px 18px 4px 18px !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  max-width: 80% !important;
+  margin-left: auto !important;
+}
+/* Bot bubble */
+[data-testid="bot"] .bubble-wrap, .message.bot {
+  background: transparent !important;
+  color: var(--text) !important;
+  max-width: 85% !important;
+}
+
+/* ── Input box ───────────────────────────────────────────────────────────── */
+textarea, input[type="text"] {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  color: var(--text) !important;
+  font-size: 0.95rem !important;
+  padding: 12px 16px !important;
+  resize: none !important;
+  outline: none !important;
+  transition: border-color 0.15s !important;
+}
+textarea:focus, input[type="text"]:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(16,163,127,0.15) !important;
+}
+textarea::placeholder, input::placeholder { color: var(--text2) !important; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+button.primary, button[variant="primary"] {
+  background: var(--accent) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 10px 20px !important;
+  cursor: pointer !important;
+  transition: opacity 0.15s !important;
+}
+button.primary:hover { opacity: 0.85 !important; }
+button.secondary, button[variant="secondary"] {
+  background: var(--bg3) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+button.stop {
+  background: #dc2626 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+}
+
+/* ── Accordion / Settings panel ──────────────────────────────────────────── */
+details, .accordion {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  margin: 8px 0 !important;
+}
+details summary {
+  padding: 12px 16px !important;
+  color: var(--text2) !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+}
+details summary:hover { color: var(--text) !important; }
+
+/* ── Dropdowns ───────────────────────────────────────────────────────────── */
+select, .dropdown {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  color: var(--text) !important;
+  padding: 8px 12px !important;
+}
+
+/* ── Sliders ─────────────────────────────────────────────────────────────── */
+input[type="range"] { accent-color: var(--accent) !important; }
+
+/* ── Labels & markdown ───────────────────────────────────────────────────── */
+label, .label-wrap span { color: var(--text2) !important; font-size: 0.82rem !important; letter-spacing: 0.02em !important; }
+.markdown p, .markdown li, .markdown td, .markdown th { color: var(--text) !important; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { color: var(--text) !important; }
+.markdown code { background: var(--bg3) !important; border-radius: 4px !important; padding: 2px 6px !important; }
+.markdown pre  { background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; padding: 16px !important; }
+.markdown table { border-collapse: collapse !important; width: 100% !important; }
+.markdown th   { background: var(--bg3) !important; padding: 8px 12px !important; }
+.markdown td   { border-top: 1px solid var(--border) !important; padding: 8px 12px !important; }
+
+/* ── Compare panel headers ───────────────────────────────────────────────── */
+.compare-header { text-align: center; font-size: 1rem; font-weight: 600; padding: 10px; color: var(--text) !important; }
+
+/* ── Evaluation results ──────────────────────────────────────────────────── */
+.eval-status { background: var(--bg2) !important; border-left: 3px solid var(--accent) !important; padding: 12px 16px !important; border-radius: 0 8px 8px 0 !important; }
+
+/* ── Examples chips ──────────────────────────────────────────────────────── */
+.examples table td { background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; color: var(--text) !important; }
+.examples table td:hover { background: var(--bg3) !important; border-color: var(--accent) !important; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* ── Hide Gradio footer ──────────────────────────────────────────────────── */
+footer, .footer, [class*="footer"] { display: none !important; }
+.built-with { display: none !important; }
 """
 
-_THEME = gr.themes.Soft(
-    primary_hue="indigo",
+_THEME = gr.themes.Base(
+    primary_hue="green",
     secondary_hue="purple",
-    neutral_hue="slate",
+    neutral_hue="gray",
     font=[gr.themes.GoogleFont("Inter"), "sans-serif"],
 )
 
@@ -259,19 +427,18 @@ _THEME = gr.themes.Soft(
 def create_combined_app() -> gr.Blocks:
     with gr.Blocks(title="AI Personal Assistants — OSS vs Frontier") as demo:
 
-        gr.Markdown(
-            """
-# 🤖 AI Personal Assistants — Open-Source vs Frontier
-Compare **Llama 3.2 (HuggingFace)** and **Gemini (Google)** side-by-side.
-Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
-"""
-        )
+        gr.HTML("""
+<div class="app-header">
+  <h1>AI Personal Assistants</h1>
+  <p>Llama 3.2 (Open-Source) &nbsp;·&nbsp; Gemini (Frontier) &nbsp;·&nbsp; Multi-turn · Streaming · Evaluation</p>
+</div>
+""")
 
         with gr.Tabs(elem_classes="tab-nav"):
 
             # ── Tab 1: OSS Assistant ──────────────────────────────────────────
             with gr.TabItem("🟣 OSS Assistant"):
-                gr.Markdown("### Open-Source Model — Llama 3.2 via HuggingFace Inference")
+                gr.HTML('<p style="color:#a855f7;font-weight:600;font-size:0.9rem;margin:8px 0 4px;letter-spacing:0.05em;">OPEN-SOURCE · Llama 3.2 · HuggingFace</p>')
                 with gr.Accordion("⚙️ Settings", open=False):
                     oss_model_dd = gr.Dropdown(
                         choices=list(OSS_MODELS.keys()),
@@ -299,7 +466,7 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 
             # ── Tab 2: Frontier Assistant ─────────────────────────────────────
             with gr.TabItem("🟠 Frontier Assistant"):
-                gr.Markdown("### Frontier Model — Gemini (Google)")
+                gr.HTML('<p style="color:#10a37f;font-weight:600;font-size:0.9rem;margin:8px 0 4px;letter-spacing:0.05em;">FRONTIER · Gemini Flash · Google</p>')
                 with gr.Accordion("⚙️ Settings", open=False):
                     fr_model_dd = gr.Dropdown(
                         choices=list(FRONTIER_MODELS.keys()),
@@ -327,10 +494,14 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 
             # ── Tab 3: Side-by-Side ───────────────────────────────────────────
             with gr.TabItem("⚖️ Side-by-Side"):
-                gr.Markdown(
-                    "### Compare both models on the same prompt\n"
-                    "OSS response streams first, then Frontier."
-                )
+                gr.HTML("""
+<div style="padding:8px 0 16px;">
+  <span style="color:#a855f7;font-weight:600;font-size:0.85rem;letter-spacing:0.05em;">OPEN-SOURCE</span>
+  <span style="color:#555;margin:0 12px;">vs</span>
+  <span style="color:#10a37f;font-weight:600;font-size:0.85rem;letter-spacing:0.05em;">FRONTIER</span>
+  <span style="color:#8e8ea0;font-size:0.82rem;margin-left:16px;">Same prompt · Both models respond</span>
+</div>
+""")
 
                 with gr.Accordion("⚙️ Shared Settings", open=False):
                     cmp_sys = gr.Textbox(value=DEFAULT_SYSTEM_PROMPT, label="System Prompt", lines=2)
@@ -351,10 +522,10 @@ Multi-turn · Streaming · Evaluation · Built for the CertifyMe AI challenge.
 
                 with gr.Row():
                     with gr.Column():
-                        gr.Markdown("#### 🟣 OSS (Qwen)", elem_classes="compare-header")
+                        gr.HTML('<div class="compare-header" style="color:#a855f7;">Llama 3.2 · Open-Source</div>')
                         cmp_oss_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
                     with gr.Column():
-                        gr.Markdown("#### 🟠 Frontier (Gemini)", elem_classes="compare-header")
+                        gr.HTML('<div class="compare-header" style="color:#10a37f;">Gemini Flash · Frontier</div>')
                         cmp_fr_bot = gr.Chatbot(height=420, layout="bubble", buttons=["copy"])
 
                 with gr.Row():
