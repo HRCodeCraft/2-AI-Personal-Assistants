@@ -162,34 +162,6 @@ def _rows_to_md(rows):
     return h + "\n".join(lines) + "\n"
 
 
-# ── Sidebar JS — injected via gr.Blocks(js=) so it actually executes ─────────
-
-_INIT_JS = """
-function sbClick(el, idx, key) {
-  // Update active highlight only for real nav items
-  var navItems = document.querySelectorAll('.gsb-nav');
-  navItems.forEach(function(n, i) {
-    n.classList.toggle('gsb-active', i === idx);
-  });
-  // Map key → hidden Gradio button wrapper ID
-  var map = {oss: '#btn-oss', fr: '#btn-fr', cmp: '#btn-cmp', eval: '#btn-eval'};
-  if (!map[key]) return;
-  // Retry until Gradio renders the button (handles slow load)
-  var attempts = 0;
-  function tryClick() {
-    var wrapper = document.querySelector(map[key]);
-    var btn = wrapper ? wrapper.querySelector('button') : null;
-    if (btn) {
-      btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-    } else if (attempts < 10) {
-      attempts++;
-      setTimeout(tryClick, 200);
-    }
-  }
-  tryClick();
-}
-"""
-
 # ── Tab-switch Python callbacks ───────────────────────────────────────────────
 
 def go_oss():      return gr.update(selected="oss")
@@ -198,11 +170,39 @@ def go_compare():  return gr.update(selected="compare")
 def go_eval():     return gr.update(selected="eval")
 
 
-# ── Sidebar HTML (entire sidebar in one block — no Gradio layout interference) ─
+# ── JS: runs at page load, wires active-state tracking on real Gradio nav buttons ─
 
-_SIDEBAR_HTML = """
-<div id="gpt-sidebar">
+_INIT_JS = """
+(function() {
+  var navIds = ['gsb-btn-oss', 'gsb-btn-fr', 'gsb-btn-cmp', 'gsb-btn-eval'];
 
+  function initNav() {
+    var all = navIds.map(function(id) { return document.getElementById(id); });
+    if (all.some(function(el) { return !el; })) {
+      setTimeout(initNav, 300);
+      return;
+    }
+    // Set initial active highlight
+    all[0].classList.add('nav-active');
+    // Track which button was last clicked for the active highlight
+    all.forEach(function(el, idx) {
+      el.addEventListener('click', function() {
+        all.forEach(function(e, i) {
+          e.classList.toggle('nav-active', i === idx);
+        });
+      });
+    });
+  }
+
+  // Wait for Gradio to finish mounting components
+  setTimeout(initNav, 600);
+})();
+"""
+
+# ── Sidebar HTML — split into top (static UI) and bottom (recents + user) ────
+
+_SIDEBAR_TOP_HTML = """
+<div id="gsb-top">
   <div class="gsb-header">
     <div class="gsb-logo">
       <svg width="18" height="18" viewBox="0 0 41 41" fill="none">
@@ -216,7 +216,7 @@ _SIDEBAR_HTML = """
     </div>
   </div>
 
-  <div class="gsb-item gsb-newchat" onclick="sbClick(this,0,'oss')">
+  <div class="gsb-item gsb-newchat">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
     </svg>
@@ -224,43 +224,26 @@ _SIDEBAR_HTML = """
   </div>
 
   <div class="gsb-item gsb-search">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
     Search chats
   </div>
 
   <div class="gsb-sep"></div>
+</div>
+"""
 
-  <div class="gsb-item gsb-nav gsb-active" id="gsb-n0" onclick="sbClick(this,0,'oss')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    OSS Assistant
-  </div>
-
-  <div class="gsb-item gsb-nav" id="gsb-n1" onclick="sbClick(this,1,'fr')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-    Frontier Assistant
-  </div>
-
-  <div class="gsb-item gsb-nav" id="gsb-n2" onclick="sbClick(this,2,'cmp')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="13" y="13" width="9" height="9"/></svg>
-    Side-by-Side
-  </div>
-
-  <div class="gsb-item gsb-nav" id="gsb-n3" onclick="sbClick(this,3,'eval')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Evaluation
-  </div>
-
+_SIDEBAR_BOT_HTML = """
+<div id="gsb-bot">
   <div class="gsb-sep"></div>
   <div class="gsb-lbl">Recents</div>
-
   <div class="gsb-hist">AI Assistants Benchmark</div>
   <div class="gsb-hist">Gemini Flash Evaluation</div>
   <div class="gsb-hist">Llama 3.2 vs Gemini</div>
   <div class="gsb-hist">Safety &amp; Bias Analysis</div>
   <div class="gsb-hist">Adversarial Prompt Tests</div>
-
   <div style="flex:1"></div>
-
   <div class="gsb-user">
     <div class="gsb-av">HR</div>
     <div>
@@ -268,8 +251,7 @@ _SIDEBAR_HTML = """
       <div class="gsb-uplan">Free</div>
     </div>
   </div>
-
-  <div class="gsb-claim">🎁 Claim offer</div>
+  <div class="gsb-claim">&#127873; Claim offer</div>
 </div>
 """
 
@@ -310,36 +292,55 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   align-items: stretch !important;
 }
 
-/* ── Sidebar column — only one gr.HTML child ── */
+/* ── Sidebar column — flex container for our nav layout ── */
 #sb-col {
   min-width: 260px !important; max-width: 260px !important;
   width: 260px !important; flex-shrink: 0 !important;
-  padding: 0 !important;
+  padding: 8px !important;
   background: var(--sb-bg) !important;
   border-right: 1px solid var(--border) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  gap: 0 !important;
 }
-/* Strip every Gradio wrapper inside the sidebar column — no display override
-   so #gpt-sidebar keeps its display:flex intact */
-#sb-col > *, #sb-col .wrap, #sb-col .block,
-#sb-col .form, #sb-col .gap, #sb-col .padded,
-#sb-col > div, #sb-col > div > div {
-  background: transparent !important;
-  border: none !important; box-shadow: none !important;
-  padding: 0 !important; margin: 0 !important; gap: 0 !important;
+#sb-col::-webkit-scrollbar { width: 0; }
+
+/*
+  Collapse every Gradio wrapper layer inside the sidebar so our HTML blocks
+  and nav buttons become direct flex children of #sb-col.
+  display:contents makes the element invisible to layout while keeping its
+  children in the flow — it is NOT inherited, so only the matched elements
+  become transparent, not their content.
+*/
+#sb-col > div,
+#sb-col .block,
+#sb-col .wrap,
+#sb-col .form,
+#sb-col .gap,
+#sb-col .padded,
+#sb-col .prose {
+  display: contents !important;
 }
 
-/* ── Sidebar inner div (our HTML) ── */
-#gpt-sidebar {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  padding: 8px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--sb-bg);
+/* ── Our sidebar HTML sections ── */
+#gsb-top {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
 }
-#gpt-sidebar::-webkit-scrollbar { width: 0; }
 
+/* Bot section fills remaining space so user/claim stick to the bottom */
+#gsb-bot {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+/* ── Sidebar header ── */
 .gsb-header {
   display: flex; align-items: center;
   padding: 10px 12px 12px;
@@ -350,7 +351,7 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   display: flex; align-items: center; justify-content: center;
 }
 
-/* All sidebar items share this base */
+/* ── Sidebar items (shared base) ── */
 .gsb-item {
   display: flex;
   align-items: center;
@@ -367,7 +368,6 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
 .gsb-item:hover { background: var(--hover); color: var(--text); }
 .gsb-item svg { flex-shrink: 0; opacity: 0.7; }
 
-/* New chat — slightly highlighted */
 .gsb-newchat {
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--border);
@@ -377,20 +377,70 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
 }
 .gsb-newchat:hover { background: var(--hover); }
 
-/* Search — muted */
 .gsb-search { color: #666; }
 .gsb-search:hover { color: var(--text3); }
 
-/* Active nav item */
-.gsb-nav.gsb-active { background: var(--active) !important; color: var(--text) !important; }
-.gsb-nav.gsb-active svg { opacity: 1; }
+.gsb-sep { height: 1px; background: var(--border); margin: 6px 4px; flex-shrink: 0; }
 
-.gsb-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+/* ── Nav buttons — real Gradio buttons styled as sidebar nav items ── */
+/*
+  #gsb-btn-* are the Gradio wrapper divs (elem_id on the outer block div).
+  Since .block gets display:contents they become transparent, and the <button>
+  inside becomes a direct flex child of #sb-col.
+  We still use #gsb-btn-*.nav-active for active-state CSS via JS class toggling.
+*/
+#gsb-btn-oss button,
+#gsb-btn-fr button,
+#gsb-btn-cmp button,
+#gsb-btn-eval button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding: 9px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 400 !important;
+  color: var(--text3) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: background 0.12s, color 0.12s !important;
+  margin: 1px 0 !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+}
+#gsb-btn-oss button:hover,
+#gsb-btn-fr button:hover,
+#gsb-btn-cmp button:hover,
+#gsb-btn-eval button:hover {
+  background: var(--hover) !important;
+  color: var(--text) !important;
+}
+#gsb-btn-oss.nav-active button,
+#gsb-btn-fr.nav-active button,
+#gsb-btn-cmp.nav-active button,
+#gsb-btn-eval.nav-active button {
+  background: var(--active) !important;
+  color: var(--text) !important;
+}
+/* Remove Gradio's default button focus ring in sidebar */
+#gsb-btn-oss button:focus,
+#gsb-btn-fr button:focus,
+#gsb-btn-cmp button:focus,
+#gsb-btn-eval button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
+/* ── Recents / bottom section ── */
 .gsb-lbl {
   font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--text2);
   padding: 8px 12px 3px;
+  flex-shrink: 0;
 }
 .gsb-hist {
   padding: 7px 12px;
@@ -398,6 +448,7 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer; border-radius: 7px;
   transition: all 0.12s;
+  flex-shrink: 0;
 }
 .gsb-hist:hover { background: var(--hover); color: var(--text3); }
 
@@ -405,6 +456,7 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 9px;
   cursor: pointer; transition: background 0.12s;
+  flex-shrink: 0;
 }
 .gsb-user:hover { background: var(--hover); }
 .gsb-av {
@@ -421,17 +473,9 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   font-size: 0.8rem; color: var(--text3);
   text-align: center; cursor: pointer;
   transition: background 0.12s;
+  flex-shrink: 0;
 }
 .gsb-claim:hover { background: var(--hover); }
-
-/* ── Hidden Gradio trigger buttons — off-screen but JS-clickable ── */
-/* MUST NOT use display:none or visibility:hidden — those block element.click() */
-#btn-oss, #btn-fr, #btn-cmp, #btn-eval {
-  position: fixed !important;
-  left: -9999px !important; top: 0 !important;
-  width: 1px !important; height: 1px !important;
-  overflow: hidden !important; opacity: 0 !important;
-}
 
 /* ── Main content column ── */
 #main-col {
@@ -556,15 +600,21 @@ def create_combined_app() -> gr.Blocks:
         with gr.Row(elem_id="app-row"):
 
             # ════════════ SIDEBAR ════════════
-            # ONE gr.HTML = zero Gradio layout interference, zero gaps
+            # Top HTML section: logo, new-chat, search, separator
+            # Then 4 real Gradio buttons styled as nav items via CSS
+            # Bottom HTML section: recents, user, claim
             with gr.Column(scale=0, min_width=260, elem_id="sb-col"):
-                gr.HTML(_SIDEBAR_HTML)
+                gr.HTML(_SIDEBAR_TOP_HTML)
 
-                # Off-screen trigger buttons — clicked by sidebar JS, run Python callbacks
-                btn_oss  = gr.Button("oss",  elem_id="btn-oss",  visible=True)
-                btn_fr   = gr.Button("fr",   elem_id="btn-fr",   visible=True)
-                btn_cmp  = gr.Button("cmp",  elem_id="btn-cmp",  visible=True)
-                btn_eval = gr.Button("eval", elem_id="btn-eval", visible=True)
+                # Real Gradio buttons — user clicks these directly.
+                # CSS (display:contents on .block/.wrap wrappers) makes them
+                # flow as direct flex children of #sb-col with zero gaps.
+                btn_oss  = gr.Button("OSS Assistant",       elem_id="gsb-btn-oss",  variant="secondary")
+                btn_fr   = gr.Button("Frontier Assistant",   elem_id="gsb-btn-fr",   variant="secondary")
+                btn_cmp  = gr.Button("Side-by-Side",         elem_id="gsb-btn-cmp",  variant="secondary")
+                btn_eval = gr.Button("Evaluation",           elem_id="gsb-btn-eval", variant="secondary")
+
+                gr.HTML(_SIDEBAR_BOT_HTML)
 
             # ════════════ MAIN CONTENT ════════════
             with gr.Column(scale=1, elem_id="main-col"):
@@ -577,12 +627,12 @@ def create_combined_app() -> gr.Blocks:
 <div class="welcome">
   <h1>Where should we begin?</h1>
   <div class="action-pills">
-    <span class="pill">📝 Ask anything</span>
-    <span class="pill">✏️ Write or edit</span>
-    <span class="pill">🔍 Look something up</span>
-    <span class="pill">📊 Analyse data</span>
+    <span class="pill">&#128221; Ask anything</span>
+    <span class="pill">&#9999; Write or edit</span>
+    <span class="pill">&#128269; Look something up</span>
+    <span class="pill">&#128202; Analyse data</span>
   </div>
-  <p class="sub-label">OSS · Llama 3.2 · HuggingFace</p>
+  <p class="sub-label">OSS &middot; Llama 3.2 &middot; HuggingFace</p>
 </div>""")
                         with gr.Accordion("⚙️ Settings", open=False):
                             oss_model_dd = gr.Dropdown(choices=list(OSS_MODELS.keys()), value=list(OSS_MODELS.keys())[0], label="Model")
@@ -610,12 +660,12 @@ def create_combined_app() -> gr.Blocks:
 <div class="welcome">
   <h1>Where should we begin?</h1>
   <div class="action-pills">
-    <span class="pill">📝 Ask anything</span>
-    <span class="pill">✏️ Write or edit</span>
-    <span class="pill">🔍 Look something up</span>
-    <span class="pill">⚡ Frontier power</span>
+    <span class="pill">&#128221; Ask anything</span>
+    <span class="pill">&#9999; Write or edit</span>
+    <span class="pill">&#128269; Look something up</span>
+    <span class="pill">&#9889; Frontier power</span>
   </div>
-  <p class="sub-label">Frontier · Gemini Flash · Google</p>
+  <p class="sub-label">Frontier &middot; Gemini Flash &middot; Google</p>
 </div>""")
                         with gr.Accordion("⚙️ Settings", open=False):
                             fr_model_dd = gr.Dropdown(choices=list(FRONTIER_MODELS.keys()), value=list(FRONTIER_MODELS.keys())[0], label="Model")
@@ -639,7 +689,7 @@ def create_combined_app() -> gr.Blocks:
 
                     # ── Side-by-Side ──────────────────────────────────────────
                     with gr.TabItem("Side-by-Side", id="compare"):
-                        gr.HTML('<p style="text-align:center;padding:14px 0 6px;font-size:0.75rem;color:#555;letter-spacing:0.06em;text-transform:uppercase;">Same prompt · Both models respond</p>')
+                        gr.HTML('<p style="text-align:center;padding:14px 0 6px;font-size:0.75rem;color:#555;letter-spacing:0.06em;text-transform:uppercase;">Same prompt &middot; Both models respond</p>')
                         with gr.Accordion("⚙️ Shared Settings", open=False):
                             cmp_sys = gr.Textbox(value=DEFAULT_SYSTEM_PROMPT, label="System Prompt", lines=2)
                             with gr.Row():
@@ -650,10 +700,10 @@ def create_combined_app() -> gr.Blocks:
                                 cmp_max  = gr.Slider(64, 2048, 512, step=64, label="Max Tokens")
                         with gr.Row():
                             with gr.Column():
-                                gr.HTML('<div class="cmp-hdr" style="color:#a855f7;">Llama 3.2 · Open-Source</div>')
+                                gr.HTML('<div class="cmp-hdr" style="color:#a855f7;">Llama 3.2 &middot; Open-Source</div>')
                                 cmp_oss_bot = gr.Chatbot(height=380, layout="bubble", buttons=["copy"], show_label=False)
                             with gr.Column():
-                                gr.HTML('<div class="cmp-hdr" style="color:#10a37f;">Gemini Flash · Frontier</div>')
+                                gr.HTML('<div class="cmp-hdr" style="color:#10a37f;">Gemini Flash &middot; Frontier</div>')
                                 cmp_fr_bot  = gr.Chatbot(height=380, layout="bubble", buttons=["copy"], show_label=False)
                         with gr.Row():
                             cmp_input = gr.Textbox(placeholder="Type a message to send to both models…", label="", scale=8, lines=1)
@@ -699,7 +749,7 @@ python evaluation/run_evaluation.py --categories factual adversarial bias --outp
 python evaluation/generate_report.py
 ```""")
 
-        # ── Wire off-screen buttons to tab switching ──────────────────────────
+        # ── Wire nav buttons to tab switching ─────────────────────────────────
         btn_oss.click(fn=go_oss,      outputs=[tabs])
         btn_fr.click(fn=go_frontier,  outputs=[tabs])
         btn_cmp.click(fn=go_compare,  outputs=[tabs])
