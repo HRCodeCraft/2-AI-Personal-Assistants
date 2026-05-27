@@ -153,13 +153,42 @@ def _rows_to_md(rows):
     if not rows:
         return "_Results will appear here…_"
     h = "| # | Prompt | OSS | Frontier |\n|---|--------|-----|----------|\n"
-    b = "".join(
-        f"| {i} | {r['prompt'][:55].replace('|','\\|')} "
-        f"| {r['oss'].replace(chr(10),' ').replace('|','\\|')[:110]} "
-        f"| {r['frontier'].replace(chr(10),' ').replace('|','\\|')[:110]} |\n"
-        for i, r in enumerate(rows, 1))
-    return h + b
+    lines = []
+    for i, r in enumerate(rows, 1):
+        p = r["prompt"][:55].replace("|", "\\|")
+        o = r["oss"].replace("\n", " ").replace("|", "\\|")[:110]
+        f = r["frontier"].replace("\n", " ").replace("|", "\\|")[:110]
+        lines.append(f"| {i} | {p} | {o} | {f} |")
+    return h + "\n".join(lines) + "\n"
 
+
+# ── Sidebar JS — injected via gr.Blocks(js=) so it actually executes ─────────
+
+_INIT_JS = """
+function sbClick(el, idx, key) {
+  // Update active highlight only for real nav items
+  var navItems = document.querySelectorAll('.gsb-nav');
+  navItems.forEach(function(n, i) {
+    n.classList.toggle('gsb-active', i === idx);
+  });
+  // Map key → hidden Gradio button wrapper ID
+  var map = {oss: '#btn-oss', fr: '#btn-fr', cmp: '#btn-cmp', eval: '#btn-eval'};
+  if (!map[key]) return;
+  // Retry until Gradio renders the button (handles slow load)
+  var attempts = 0;
+  function tryClick() {
+    var wrapper = document.querySelector(map[key]);
+    var btn = wrapper ? wrapper.querySelector('button') : null;
+    if (btn) {
+      btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+    } else if (attempts < 10) {
+      attempts++;
+      setTimeout(tryClick, 200);
+    }
+  }
+  tryClick();
+}
+"""
 
 # ── Tab-switch Python callbacks ───────────────────────────────────────────────
 
@@ -187,7 +216,7 @@ _SIDEBAR_HTML = """
     </div>
   </div>
 
-  <div class="gsb-item gsb-newchat" onclick="sbClick(this,0,'new')">
+  <div class="gsb-item gsb-newchat" onclick="sbClick(this,0,'oss')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
     </svg>
@@ -242,21 +271,6 @@ _SIDEBAR_HTML = """
 
   <div class="gsb-claim">🎁 Claim offer</div>
 </div>
-
-<script>
-function sbClick(el, idx, key) {
-  // Update active highlight
-  document.querySelectorAll('.gsb-nav').forEach(function(n,i){
-    n.classList.toggle('gsb-active', i===idx);
-  });
-  // Click the hidden Gradio button
-  var map = {oss:'#btn-oss', fr:'#btn-fr', cmp:'#btn-cmp', eval:'#btn-eval'};
-  if (map[key]) {
-    var btn = document.querySelector(map[key] + ' button');
-    if (btn) btn.click();
-  }
-}
-</script>
 """
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -304,14 +318,14 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
   background: var(--sb-bg) !important;
   border-right: 1px solid var(--border) !important;
 }
-/* Strip every Gradio wrapper inside the sidebar column */
+/* Strip every Gradio wrapper inside the sidebar column — no display override
+   so #gpt-sidebar keeps its display:flex intact */
 #sb-col > *, #sb-col .wrap, #sb-col .block,
 #sb-col .form, #sb-col .gap, #sb-col .padded,
 #sb-col > div, #sb-col > div > div {
   background: transparent !important;
   border: none !important; box-shadow: none !important;
   padding: 0 !important; margin: 0 !important; gap: 0 !important;
-  display: block !important;
 }
 
 /* ── Sidebar inner div (our HTML) ── */
@@ -410,13 +424,13 @@ html, body { margin: 0; padding: 0; background: var(--bg) !important; }
 }
 .gsb-claim:hover { background: var(--hover); }
 
-/* ── Hidden Gradio trigger buttons (off-screen, still JS-clickable) ── */
+/* ── Hidden Gradio trigger buttons — off-screen but JS-clickable ── */
+/* MUST NOT use display:none or visibility:hidden — those block element.click() */
 #btn-oss, #btn-fr, #btn-cmp, #btn-eval {
   position: fixed !important;
   left: -9999px !important; top: 0 !important;
   width: 1px !important; height: 1px !important;
   overflow: hidden !important; opacity: 0 !important;
-  pointer-events: none !important;
 }
 
 /* ── Main content column ── */

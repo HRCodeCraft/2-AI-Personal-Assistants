@@ -11,7 +11,7 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from apps.combined import create_combined_app, _THEME, CUSTOM_CSS
+from apps.combined import create_combined_app, _THEME, CUSTOM_CSS, _INIT_JS
 
 
 def main() -> None:
@@ -26,6 +26,7 @@ def main() -> None:
         share=share,
         theme=_THEME,
         css=CUSTOM_CSS,
+        js=_INIT_JS,
     )
 
 
